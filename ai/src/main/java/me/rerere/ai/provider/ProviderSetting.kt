@@ -1,6 +1,7 @@
 package me.rerere.ai.provider
 
 import androidx.compose.runtime.Composable
+import com.ai_model_hub.sdk.ModelAllowlist
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -226,12 +227,67 @@ sealed class ProviderSetting {
         }
     }
 
+    @Serializable
+    @SerialName("aimodelhub")
+    data class AiModelHub(
+        override var id: Uuid = Uuid.random(),
+        override var enabled: Boolean = true,
+        override var name: String = "AiModelHub",
+        override val models: List<Model> = ModelAllowlist.models.map {
+            Model(
+                modelId = it.name,
+                displayName = it.displayName,
+                inputModalities = listOf(Modality.TEXT),
+                outputModalities = listOf(Modality.TEXT),
+            )
+        },
+        override val balanceOption: BalanceOption = BalanceOption(),
+        @Transient override val builtIn: Boolean = false,
+        @Transient override val description: @Composable (() -> Unit) = {},
+        @Transient override val shortDescription: @Composable (() -> Unit) = {},
+    ) : ProviderSetting() {
+        override fun addModel(model: Model): ProviderSetting = copy(models = models + model)
+
+        override fun editModel(model: Model): ProviderSetting =
+            copy(models = models.map { if (it.id == model.id) model.copy() else it })
+
+        override fun delModel(model: Model): ProviderSetting =
+            copy(models = models.filter { it.id != model.id })
+
+        override fun moveMove(from: Int, to: Int): ProviderSetting =
+            copy(models = models.toMutableList().apply {
+                val model = removeAt(from)
+                add(to, model)
+            })
+
+        override fun copyProvider(
+            id: Uuid,
+            enabled: Boolean,
+            name: String,
+            models: List<Model>,
+            balanceOption: BalanceOption,
+            builtIn: Boolean,
+            description: @Composable (() -> Unit),
+            shortDescription: @Composable (() -> Unit),
+        ): ProviderSetting = this.copy(
+            id = id,
+            enabled = enabled,
+            name = name,
+            models = models,
+            balanceOption = balanceOption,
+            builtIn = builtIn,
+            description = description,
+            shortDescription = shortDescription,
+        )
+    }
+
     companion object {
         val Types by lazy {
             listOf(
                 OpenAI::class,
                 Google::class,
                 Claude::class,
+                AiModelHub::class,
             )
         }
     }

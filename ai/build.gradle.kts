@@ -69,6 +69,9 @@ dependencies {
     api(libs.kotlinx.coroutines.core)
     api(libs.kotlinx.datetime)
 
+    // AiModelHub on-device inference SDK
+    implementation("com.ai_model_hub:sdk:0.2.0")
+
     // tests
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

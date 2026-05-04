@@ -287,4 +287,22 @@ val DEFAULT_PROVIDERS = listOf(
             )
         }
     ),
+    ProviderSetting.AiModelHub(
+        id = Uuid.parse("e3c4d5e6-f7a8-9012-cdef-123456789012"),
+        enabled = false,
+        builtIn = true,
+        description = {
+            Text(
+                text = buildAnnotatedString {
+                    append("On-device AI inference via AiModelHub app. Runs Gemma models entirely locally — no internet required.\n")
+                    append("App: ")
+                    withLink(LinkAnnotation.Url("https://github.com/alex-80/AiModelHub")) {
+                        withStyle(SpanStyle(MaterialTheme.colorScheme.primary)) {
+                            append("github.com/alex-80/AiModelHub")
+                        }
+                    }
+                }
+            )
+        }
+    ),
 )

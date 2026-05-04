@@ -83,6 +83,10 @@ fun ProviderConfigure(
             is ProviderSetting.Claude -> {
                 ProviderConfigureClaude(provider, onEdit)
             }
+
+            is ProviderSetting.AiModelHub -> {
+                ProviderConfigureAiModelHub(provider, onEdit)
+            }
         }
     }
 }
@@ -96,20 +100,27 @@ fun ProviderSetting.convertTo(type: KClass<out ProviderSetting>): ProviderSettin
         is ProviderSetting.OpenAI -> this.apiKey
         is ProviderSetting.Google -> this.apiKey
         is ProviderSetting.Claude -> this.apiKey
+        is ProviderSetting.AiModelHub -> ""
     }
 
     val sourceBaseUrl = when (this) {
         is ProviderSetting.OpenAI -> this.baseUrl
         is ProviderSetting.Google -> this.baseUrl
         is ProviderSetting.Claude -> this.baseUrl
+        is ProviderSetting.AiModelHub -> ""
     }
     val targetDefaultBaseUrl = when (type) {
         ProviderSetting.OpenAI::class -> ProviderSetting.OpenAI().baseUrl
         ProviderSetting.Google::class -> ProviderSetting.Google().baseUrl
         ProviderSetting.Claude::class -> ProviderSetting.Claude().baseUrl
+        ProviderSetting.AiModelHub::class -> ""
         else -> error("Unsupported provider type: $type")
     }
-    val convertedBaseUrl = sourceBaseUrl.convertToTargetBaseUrl(targetDefaultBaseUrl)
+    val convertedBaseUrl = if (sourceBaseUrl.isNotBlank() && targetDefaultBaseUrl.isNotBlank()) {
+        sourceBaseUrl.convertToTargetBaseUrl(targetDefaultBaseUrl)
+    } else {
+        targetDefaultBaseUrl
+    }
 
     return when (type) {
         ProviderSetting.OpenAI::class -> ProviderSetting.OpenAI(
@@ -151,6 +162,17 @@ fun ProviderSetting.convertTo(type: KClass<out ProviderSetting>): ProviderSettin
             baseUrl = convertedBaseUrl
         )
 
+        ProviderSetting.AiModelHub::class -> ProviderSetting.AiModelHub(
+            id = this.id,
+            enabled = this.enabled,
+            name = this.name,
+            models = this.models,
+            balanceOption = this.balanceOption,
+            builtIn = this.builtIn,
+            description = this.description,
+            shortDescription = this.shortDescription,
+        )
+
         else -> error("Unsupported provider type: $type")
     }
 }
@@ -162,6 +184,7 @@ internal fun ProviderSetting.defaultBaseUrlForReset(): String {
             is ProviderSetting.OpenAI -> if (defaultProvider is ProviderSetting.OpenAI) return defaultProvider.baseUrl
             is ProviderSetting.Google -> if (defaultProvider is ProviderSetting.Google) return defaultProvider.baseUrl
             is ProviderSetting.Claude -> if (defaultProvider is ProviderSetting.Claude) return defaultProvider.baseUrl
+            is ProviderSetting.AiModelHub -> return ""
         }
     }
 
@@ -169,6 +192,7 @@ internal fun ProviderSetting.defaultBaseUrlForReset(): String {
         is ProviderSetting.OpenAI -> ProviderSetting.OpenAI().baseUrl
         is ProviderSetting.Google -> ProviderSetting.Google().baseUrl
         is ProviderSetting.Claude -> ProviderSetting.Claude().baseUrl
+        is ProviderSetting.AiModelHub -> ""
     }
 }
 
@@ -178,6 +202,7 @@ internal fun ProviderSetting.resetBaseUrlToDefault(): ProviderSetting {
         is ProviderSetting.OpenAI -> this.copy(baseUrl = defaultBaseUrl)
         is ProviderSetting.Google -> this.copy(baseUrl = defaultBaseUrl)
         is ProviderSetting.Claude -> this.copy(baseUrl = defaultBaseUrl)
+        is ProviderSetting.AiModelHub -> this
     }
 }
 
@@ -186,6 +211,7 @@ internal fun ProviderSetting.isUsingDefaultBaseUrl(): Boolean {
         is ProviderSetting.OpenAI -> this.baseUrl
         is ProviderSetting.Google -> this.baseUrl
         is ProviderSetting.Claude -> this.baseUrl
+        is ProviderSetting.AiModelHub -> return true
     }
     return baseUrl == defaultBaseUrlForReset()
 }
@@ -575,4 +601,41 @@ private fun ColumnScope.ProviderConfigureGoogle(
             )
         }
     }
+}
+
+@Composable
+private fun ColumnScope.ProviderConfigureAiModelHub(
+    provider: ProviderSetting.AiModelHub,
+    onEdit: (provider: ProviderSetting.AiModelHub) -> Unit
+) {
+    provider.description()
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(stringResource(id = R.string.setting_provider_page_enable), modifier = Modifier.weight(1f))
+        Checkbox(
+            checked = provider.enabled,
+            onCheckedChange = {
+                onEdit(provider.copy(enabled = it))
+            }
+        )
+    }
+
+    OutlinedTextField(
+        value = provider.name,
+        onValueChange = {
+            onEdit(provider.copy(name = it.trim()))
+        },
+        label = {
+            Text(stringResource(id = R.string.setting_provider_page_name))
+        },
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    Text(
+        text = "AiModelHub runs AI models entirely on-device. Install the AiModelHub app (github.com/alex-80/AiModelHub) and enable a model to use this provider.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 }
